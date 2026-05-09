@@ -1,0 +1,1 @@
+SECTION "OAM Region", OAM[$FE00]
