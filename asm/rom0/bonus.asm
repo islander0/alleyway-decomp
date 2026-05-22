@@ -24,7 +24,7 @@ decrement_bonus_stage_time:
 
 ; Loads maximum bonus time into the OAM buffer     
 ; bonus stage 1 = $5F           
-; bonus stage 2 = $5a
+; bonus stage 2 = $5A
 ; bonus stage 3 = $55           
 ; bonus stage 4+ = $50          
 

@@ -1,7 +1,21 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
-#include "../io.h"
+#include "../../include/wram.h"
+#include "../../include/io.h"
+
+#include "../../include/rom0/anim.h"
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/bonus.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/game.h"
+#include "../../include/rom0/init.h"
+#include "../../include/rom0/lcd.h"
+#include "../../include/rom0/level.h"
+#include "../../include/rom0/paddle.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/score.h"
+#include "../../include/rom0/utils.h"
 
 #include <stdint.h>
 
@@ -22,7 +36,7 @@ uint8_t set_palette_data(uint8_t a) {
     return 0;
 }
 
-void load_fade_in_data(CPU *cpu) {
+void load_fade_in_data(void) {
     uint8_t *p_fade = palette_fade_data[0];
     
     goto set_counter;
@@ -49,17 +63,17 @@ void lcd_stat_work() {
         hram.brick_scroll_flag = 0;
 
         IO_REGS->lyc = 7;
-        IO_REGS->scy = wram.lcd_y_vblank;
+        IO_REGS->scy = lcd_y_vblank;
         IO_REGS->scx = 0;
 
         return;
     }
 
     IO_REGS->lyc = (hram.brick_scroll_flag << 2) + 11;
-    IO_REGS->scx = wram.scroll_x_table[hram.brick_scroll_flag];
+    IO_REGS->scx = scroll_x_table[hram.brick_scroll_flag];
 
     if (hram.brick_scroll_flag == 0) {
-        IO_REGS->scy = wram.lcd_y;
+        IO_REGS->scy = lcd_y;
     }
 
     return;
@@ -68,8 +82,8 @@ void lcd_stat_work() {
 void update_lcd_y(void) {
     uint8_t b = hram.lcd_y_descent_counter;
 
-    wram.lcd_y = b << 2;
-    wram.lcd_y_vblank = (b < 21) ? 112 : 176;
+    lcd_y = b << 2;
+    lcd_y_vblank = (b < 21) ? 112 : 176;
 }
 
 void lcd_y_handler () {

@@ -1,12 +1,26 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
-#include "../io.h"
-#include "../enum.h"
+#include "../../include/wram.h"
+#include "../../include/io.h"
+#include "../../include/enum.h"
+
+#include "../../include/rom0/anim.h"
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/bonus.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/game.h"
+#include "../../include/rom0/init.h"
+#include "../../include/rom0/lcd.h"
+#include "../../include/rom0/level.h"
+#include "../../include/rom0/paddle.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/score.h"
+#include "../../include/rom0/utils.h"
 
 #include <stdint.h>
 
-uint8_t update_frame_accumulator() {
+uint8_t update_frame_accumulator(void) {
     uint8_t update_frame_count = 5;
 
     do {
@@ -24,7 +38,7 @@ void state_boot_init (void) {
 }
 
 void state_game_init (void) {
-    wram.title_demo_cycle_index = 4;
+    title_demo_cycle_index = 4;
     hram.game_state = TITLE_SCREEN;
 }
 
@@ -48,15 +62,15 @@ void state_title_screen() {
     interrupt_enable();
     lcd_ppu_enable();
 
-    wram.title_demo_cycle_index++ != 5
-        ? wram.title_demo_cycle_index++
-        : (wram.title_demo_cycle_index = 0);
+    title_demo_cycle_index++ != 5
+        ? title_demo_cycle_index++
+        : (title_demo_cycle_index = 0);
 
-    wram.title_demo_cycle_index == 0
+    title_demo_cycle_index == 0
         ? clear_demo_flag(), load_track_title()
         : set_demo_flag();
 
-    wram.level_demo_cycle_timer = 3;
+    level_demo_cycle_timer = 3;
 
     do {
         wait_vblank();
@@ -64,13 +78,13 @@ void state_title_screen() {
         if (hram.game_tick != 0
         && (hram.button_pressed_flag &= 8) != 0)
         {
-            wram.true_stage_number = 0;
-            wram.stage_number_display = 0;
-            wram.bonus_stage_number = 0;
+            true_stage_number = 0;
+            stage_number_display = 0;
+            bonus_stage_number = 0;
             hram.extra_life_gained_total = 0;
             hram.player_score = 0;
 
-            wram.life_counter = 4;
+            life_counter = 4;
 
             set_next_extra_life_score_threshold();
             clear_demo_flag();
@@ -80,9 +94,9 @@ void state_title_screen() {
             return;
         }
 
-        wram.level_demo_cycle_timer--;
+        level_demo_cycle_timer--;
 
-        if (wram.level_demo_cycle_timer == 0) {
+        if (level_demo_cycle_timer == 0) {
             hram.game_state = LOAD_DEMO_STAGE;
             return;
         }
@@ -90,25 +104,25 @@ void state_title_screen() {
 }
 
 // WIP
-// need to know what cpu->a is before creating a value
-void state_load_demo(CPU *cpu) {
+// need to know what a is before creating a value
+void state_load_demo(uint8_t a) {
     set_demo_flag();
     level_load_handler();
 
     do {
         update_frame_accumulator();
 
-        cpu->a &= 0x1F;
-        wram.true_stage_number = cpu->a;
+        a &= 0x1F;
+        true_stage_number = a;
     } while (stage_properties[bonus] != false);
 
-    wram.stage_number_display = 0xFF;
+    stage_number_display = 0xFF;
     hram.player_score_lo = 0;
     hram.player_score_hi = 0;
-    wram.life_counter = 0;
+    life_counter = 0;
 
     state_load_stage();
-    wram.level_demo_cycle_timer = 10;
+    level_demo_cycle_timer = 10;
 
     shift_paddle_left();
     init_ball();
@@ -136,7 +150,7 @@ void state_load_demo(CPU *cpu) {
         }
     } while (
         hram.game_tick != 0 ||
-        (wram.level_demo_cycle_timer--) != 0
+        (level_demo_cycle_timer--) != 0
     );
     
     wait_frames(20);
@@ -206,8 +220,6 @@ int main(void) {
     return 0;
 }
 
-
-
 // WIP
 void state_load_stage (void) {
     clear_bonus_time_text_vram();
@@ -221,13 +233,13 @@ void state_load_stage (void) {
     
     /* Closer to ASM:
 
-    if ((stage_properties_table[wram.true_stage_number * 3] &= (1 << 7)) == 1) {
+    if ((stage_properties_table[true_stage_number * 3] &= (1 << 7)) == 1) {
         bonus_ball_set();
     } else {
         increment_stage_number_display();
     }
 
-    if ((stage_properties_table[wram.true_stage_number * 3] &= (1 << 6)) == 1) {
+    if ((stage_properties_table[true_stage_number * 3] &= (1 << 6)) == 1) {
         init_scrolling_stage_data();
     }
 
@@ -244,7 +256,7 @@ void state_load_stage (void) {
     hram.paddle_x = 0x28;
     hram.init_paddle_y = 0x90;
 
-    load_level_brick_data(wram.true_stage_number);
+    load_level_brick_data(true_stage_number);
     count_level_bricks();
     init_scroll_x_table();
     load_wall_oam_buffer();
@@ -252,7 +264,7 @@ void state_load_stage (void) {
     load_lives_number_vram();
     debug_ball_velocity();
 
-    if (wram.stage_number_display == 1) {
+    if (stage_number_display == 1) {
         mario_start_handler();
     }
 
@@ -264,7 +276,7 @@ void state_load_stage (void) {
     debug_ball_velocity();
     load_lives_number_vram();
     load_stage_number_display_vram();
-    wait_frames(16);();
+    wait_frames(16);
     animate_bricks_scroll_in();
     clear_main_oam_buffer();
     update_score_oam_buffer();
@@ -280,9 +292,9 @@ void state_load_stage (void) {
 }
 
 void game_win_handler(void) {
-    wram.true_stage_number = (wram.true_stage_number + 1) % 0x20;
+    true_stage_number = (true_stage_number + 1) % 0x20;
 }
 
-void lose_state(void) {
+void set_lose_state(void) {
     hram.game_state = LOSE_LIFE;
 }

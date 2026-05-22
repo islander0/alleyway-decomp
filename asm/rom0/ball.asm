@@ -553,6 +553,26 @@ ball_spawn_handler:
 
     ret
 
+; fetches the ball's XY coordinates and updates the oam data accordingly
+; only affects the oam, not the collision data
+
+update_ball_oam_buffer:
+    ld hl, OAM_BALL_START
+
+    ldh a, [h_ball_y]
+    ld [hl+], a    ; y
+
+    ldh a, [h_ball_x]
+    ld [hl+], a    ; x
+
+    ld a, $5
+    ld [hl+], a    ; tile ID
+
+    ld a, $0
+    ld [hl+], a    ; attr
+
+    ret
+
 SECTION "Ball Data", ROM0[$11EE]
 
 ; -----------------------------------

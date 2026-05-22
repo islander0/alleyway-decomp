@@ -1,16 +1,20 @@
-#include "../include/hram.h"
-#include "../include/wram.h"
-#include "../include/cpu.h"
+#include "../../include/wram.h"
+#include "../hram.c"
+#include "../../include/cpu.h"
+
+#include "../../include/rom0/anim.h"
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/paddle.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/utils.h"
 
 #include <stdint.h>
 
 // Take two 8-bit values and combine them into a 16-bit register
 #define MAKE_U16(h, l) (((uint16_t)(h) << 8) | (uint16_t)((uint8_t)(l)))
-
-#define MARIO_JUMP_VEL_LEN 23
-#define EXPLOSION_ANIM_OFFSET_LEN 36
-#define MARIO_WINK_ANIM_OFFSET_LEN 29
-#define ANIM_FRAME_TILE_LEN 208
 
 void animate_bricks_scroll_in() {
     hram.play_area_scroll_y = hram.total_row_count - 2;
@@ -30,24 +34,24 @@ void animate_bricks_scroll_in() {
 }
 
 void update_mario_walking_frame() {
-    wram.anim_timer--;
+    anim_timer--;
 
-    if (wram.anim_timer != 0) {
+    if (anim_timer != 0) {
         return;
     }
 
-    wram.mario_anim_frame++ < 3
-        ? wram.mario_anim_frame++
-        : (wram.mario_anim_frame = 0);
+    mario_anim_frame++ < 3
+        ? mario_anim_frame++
+        : (mario_anim_frame = 0);
 
-    wram.anim_timer = 5;
+    anim_timer = 5;
 }
 
 void copy_current_anim_xy(void) {
     copy_tiles4_oam_buffer(
-        wram.current_anim_x,
-        wram.current_anim_y,
-        wram.mario_anim_frame
+        current_anim_x,
+        current_anim_y,
+        mario_anim_frame
     );
 
     wait_vblank();
@@ -64,12 +68,12 @@ const uint8_t paddle_open_frame_2_tile_data[3] = {2, 3, 2};
 void paddle_open_close_oam_handler(CPU *cpu) {
     uint8_t index = paddle_open_close_anim_spr_ptr[cpu->a];
 
-    uint8_t bc = index;
+    uint8_t b = index;
     cpu->e = 3;
 
-    bc = multiply(bc, cpu->e);
+    b = multiply(b, cpu->e);
 
-    const uint16_t *hl = paddle_open_frame_0_tile_data + bc;
+    const uint16_t *hl = paddle_open_frame_0_tile_data + b;
 
     OAM_PADDLE_START[2] = *hl++;
     OAM_PADDLE_START[6] = *hl++;
@@ -82,23 +86,23 @@ void paddle_open_anim_handler(CPU *cpu) {
     update_paddle_oam_buffer();
 
     for (cpu->a = 0; cpu->a < 3; cpu->a++) {
-        paddle_open_close_oam_handler(cpu->a);
+        paddle_open_close_oam_handler(cpu);
         wait_frames(8);
     }
 }
 
 void mario_jump_velocity_handler(void) {
-    uint8_t prev = wram.mario_jump_frame_index;
-    wram.mario_jump_frame_index++;
+    uint8_t prev = mario_jump_frame_index;
+    mario_jump_frame_index++;
 
-    wram.current_anim_y += mario_jump_y_velocity_data[prev];
+    current_anim_y += mario_jump_y_velocity_data[prev];
 
-    wram.current_anim_x += (wram.mario_jump_x_direction_flag << 1) - 1;
+    current_anim_x += (mario_jump_x_direction_flag << 1) - 1;
 }
 
 void paddle_close_anim_handler(CPU *cpu) {
     for (cpu->a = 2; cpu->a != 0xFF; cpu->a--) {
-        paddle_open_close_oam_handler(cpu->a);
+        paddle_open_close_oam_handler(cpu);
         wait_frames(0xC);
     }
 }
@@ -107,76 +111,76 @@ void mario_start_handler(void) {
     update_paddle_oam_buffer();
     load_track_start();
 
-    wram.current_anim_x = hram.paddle_x + 0x50;
-    wram.current_anim_y = hram.init_paddle_y - 0x10;
-    wram.anim_timer = 3;
+    current_anim_x = hram.paddle_x + 0x50;
+    current_anim_y = hram.init_paddle_y - 0x10;
+    anim_timer = 3;
 
     //update mario walk
     while (1) {
         update_mario_walking_frame();
         copy_current_anim_xy();
-        wram.current_anim_x--;
+        current_anim_x--;
 
-        if (wram.current_anim_x == 0x44)
+        if (current_anim_x == 0x44)
             break;
     }
 
-    wram.mario_anim_frame = 3;
+    mario_anim_frame = 3;
     copy_current_anim_xy();
     set_event_mario_jump();
     paddle_open_anim_handler();
-    wram.mario_anim_frame = 4;
-    wram.mario_jump_frame_index = 0;
-    wram.mario_jump_x_direction_flag = 0;
+    mario_anim_frame = 4;
+    mario_jump_frame_index = 0;
+    mario_jump_x_direction_flag = 0;
 
     // update mario_jump_velocity
-    while (wram.mario_jump_frame_index < 0x18) {
+    while (mario_jump_frame_index < 0x18) {
         copy_current_anim_xy();
         mario_jump_velocity_handler();
     }
 
     // lower mario
-    while (wram.current_anim_y < 0x88) {
+    while (current_anim_y < 0x88) {
         copy_current_anim_xy();
-        wram.current_anim_y += 4;
+        current_anim_y += 4;
     }
     
-    clear_anim_oam_buffer();
+    load_anim_oam_buffer();
     wait_frames(0x10);
     paddle_close_anim_handler();
     update_paddle_oam_buffer();
 }
 
-void mario_game_over_handler(void) {
+void mario_game_over_handler(CPU *cpu) {
     shift_paddle_left();
     update_paddle_oam_buffer();
     set_event_death_no_lives();
-    paddle_open_anim_handler();
+    paddle_open_anim_handler(cpu);
 
-    wram.current_anim_y = 0x88;
-    wram.current_anim_x = hram.paddle_x + 4;
+    current_anim_y = 0x88;
+    current_anim_x = hram.paddle_x + 4;
 
-    if (wram.current_anim_x >= 76) {
-        wram.mario_jump_x_direction_flag = 0;
-        wram.mario_anim_frame = 5;
+    if (current_anim_x >= 76) {
+        mario_jump_x_direction_flag = 0;
+        mario_anim_frame = 5;
     } else {
-        wram.mario_jump_x_direction_flag = 1;
-        wram.mario_anim_frame = 6;
+        mario_jump_x_direction_flag = 1;
+        mario_anim_frame = 6;
     }
 
-    wram.mario_jump_frame_index = 0;
+    mario_jump_frame_index = 0;
 
-    while (wram.mario_jump_frame_index < 0x18) {
+    while (mario_jump_frame_index < 0x18) {
         copy_current_anim_xy();
         mario_jump_velocity_handler();
     }
 
-    while (wram.current_anim_y < 0xA0) {
+    while (current_anim_y < 0xA0) {
         copy_current_anim_xy();
-        wram.current_anim_y += 4;
+        current_anim_y += 4;
     }
 
-    clear_anim_oam_buffer();
+    load_anim_oam_buffer();
     wait_frames(0x40);
 }
 
@@ -194,7 +198,7 @@ const int8_t mario_jump_y_velocity_data[MARIO_JUMP_VEL_LEN] = {
     0x03, 0x03, 0x03    // 3
 };
 
-uint8_t explosion_anim_offset_data[EXPLOSION_ANIM_OFFSET_LEN] = {
+const uint8_t explosion_anim_offset_data[EXPLOSION_ANIM_OFFSET_LEN] = {
     7, 7, 7, 7, 7, 7, 7, 7,
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9
@@ -203,26 +207,26 @@ uint8_t explosion_anim_offset_data[EXPLOSION_ANIM_OFFSET_LEN] = {
 void explosion_oam_handler(CPU *cpu) {
     set_ball_oob();
 
-    wram.current_anim_x = hram.ball_x - 8;
-    wram.current_anim_y = 0x90;
-    wram.anim_timer = 0;
+    current_anim_x = hram.ball_x - 8;
+    current_anim_y = 0x90;
+    anim_timer = 0;
 
     // next animation frame
     do {
-        uint16_t bc = MAKE_U16(wram.current_anim_x, wram.current_anim_y);
-        cpu->a = explosion_anim_offset_data[wram.anim_timer];
+        uint16_t bc = MAKE_U16(current_anim_x, current_anim_y);
+        cpu->a = explosion_anim_offset_data[anim_timer];
 
         copy_tiles4_oam_buffer(bc, cpu->a);
         wait_vblank();
 
-        wram.anim_timer++;
+        anim_timer++;
 
-    } while (wram.anim_timer < 0x24);
+    } while (anim_timer < 0x24);
 
-    clear_anim_oam_buffer();
+    load_anim_oam_buffer();
 }
 
-uint8_t mario_wink_anim_offset_data[MARIO_WINK_ANIM_OFFSET_LEN] = {
+const uint8_t mario_wink_anim_offset_data[MARIO_WINK_ANIM_OFFSET_LEN] = {
     0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A,
     0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B,
     0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C,
@@ -231,24 +235,24 @@ uint8_t mario_wink_anim_offset_data[MARIO_WINK_ANIM_OFFSET_LEN] = {
 };
 
 void mario_wink_oam_handler(CPU *cpu) {
-    wram.anim_timer = 0;
+    anim_timer = 0;
 
     //next animation frame
     do {
         uint16_t bc = 0x3848;
-        cpu->a = mario_wink_anim_offset_data[wram.anim_timer];
+        cpu->a = mario_wink_anim_offset_data[anim_timer];
 
-        copy_tiles4_oam_buffer(bc, cpu->a);
+        copy_tiles4_oam_buffer(bc, cpu);
         wait_vblank();
 
-        wram.anim_timer++;
+        anim_timer++;
 
-    } while (wram.anim_timer < 0x1D);
+    } while (anim_timer < 0x1D);
 
-    clear_anim_oam_buffer();
+    load_anim_oam_buffer();
 }
 
-uint8_t anim_frame_tile_data[ANIM_FRAME_TILE_LEN] = {
+const uint8_t anim_frame_tile_data[ANIM_FRAME_TILE_LEN] = {
     0x00, 0x00, 0x06, 0x80, 0x00, 0x08, 0x07, 0x80, 0x08, 0x00, 0x08, 0x80, 0x08, 0x08, 0x09, 0x80, // mario_walk_frame_0
     0x00, 0x00, 0x0A, 0x80, 0x00, 0x08, 0x0B, 0x80, 0x08, 0x00, 0x0C, 0x80, 0x08, 0x08, 0x0D, 0x80, // mario_walk_frame_1
     0x00, 0x00, 0x0E, 0x80, 0x00, 0x08, 0x0F, 0x80, 0x08, 0x00, 0x10, 0x80, 0x08, 0x08, 0x11, 0x80, // mario_walk_frame_2

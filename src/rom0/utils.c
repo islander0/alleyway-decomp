@@ -1,8 +1,7 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
-#include "../io.h"
-#include "../enum.h"
+#include "../../include/wram.h"
+#include "../../include/io.h"
+#include "../../include/enum.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -149,28 +148,30 @@ void score_to_bcd(uint8_t a, uint8_t b) {
     hram.score_digit_ones += 10;
     hram.score_digit_tens = ones;
 }
-
+// MATCH: byte-level
 void clear_demo_flag(void) {
-    wram.demo_flag = false;
+    demo_flag = false;
 }
-
+// MATCH: behavioral (SDCC loads demo_flag into hl and uses its pointer to load 1 into it)
 void set_demo_flag(void) {
-    wram.demo_flag = true;
+    demo_flag = true;
 }
 
+// MATCH: behavioral (SDCC emits redundant xor a,a before track_index store)
 void demo_reset(void) {
-    wram.game_event = NONE;
-    wram.ball_oob = false;
-    wram.track_index = NO_TRACK;
+    game_event = NONE;
+    ball_oob = false;
+    track_index = NO_TRACK;
 }
 
+// MATCH: behavioral (SDCC replaces 2 byte cp 1 instruction with dec a)
 void demo_flag_handler(void){
-    if (wram.demo_flag == true) {
+    if (demo_flag == true) {
         demo_reset();
     }
 }
 
-void multiply(uint8_t b, uint8_t e) {
+uint8_t multiply(uint8_t b, uint8_t e) {
     uint8_t h = 0;
     uint8_t l = 0;
 
@@ -186,39 +187,45 @@ void multiply(uint8_t b, uint8_t e) {
     }
 
     b = h;
+
+    return b;
+    return e;
 }
 
 void unused_load_absolute_value(uint8_t a, uint8_t b) {
     a -= b;
     b = a;
 
-    if (a > 0x7F)
+    if (a > 0x7F) {
         uint8_t result = (b ^ 0xFF) + 1; // make the result positive
+    }
 }
 
 void negate_bc(int16_t bc) {
     bc = -bc;
 }
 
-uint8_t binary_to_bcd(uint8_t bcd_result) {
-    uint8_t bcd_hundreds = 0xFF;    // cpu->c
-    uint8_t bcd_tens = 0xFF;        // cpu->b
+uint8_t binary_to_bcd(uint8_t a, uint8_t b, uint8_t c) {
+    c = 0xFF;    // cpu->c
+    b = 0xFF;    // cpu->b
 
+    // loop hundreds
     do {
-        bcd_hundreds++;
-        bcd_result -= 100;
-    } while (bcd_result >= 100);
+        c++;
+        a -= 100;
+    } while (a >= 100);
 
-    bcd_result += 100;
+    a += 100;
 
+    // loop tens
     do {
-        bcd_tens++;
-        bcd_result -= 10;
-    } while (bcd_result >= 10);
+        b++;
+        a -= 10;
+    } while (a >= 10);
 
-    bcd_result += 10;
+    a += 10;
 
-    return bcd_result;
-    return bcd_hundreds;
-    return bcd_tens;
+    return a;
+    return b;
+    return c;
 }

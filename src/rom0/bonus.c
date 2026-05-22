@@ -1,8 +1,17 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
+#include "../../include/wram.h"
 
 #include <stdint.h>
+
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/bonus.h"
+#include "../../include/rom0/game.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/score.h"
+#include "../../include/rom0/utils.h"
+
+#include "../../include/vram.h"
 
 const uint8_t bonus_stage_max_time[4] = {
     95, 90, 85, 80
@@ -12,56 +21,65 @@ const uint16_t bonus_stage_points[4] = {
     500, 700, 1000, 1500
 };
 
-void decrement_bonus_stage_time(void) {
-    // if (hram.game_tick > 0b0001 1111)
+void load_bonus_stage_time_oam_buffer(uint8_t a, uint8_t b, uint8_t c) {
+    uint8_t time = bonus_stage_time;
+
+    binary_to_bcd(time, b, c);
+    uint8_t tens = b;
+    uint8_t ones = a;
+
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 0] = 0x80; 
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 1] = 0x90; 
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 2] = tens + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 3] = 0;
     
-    if (!(hram.game_tick & 32)) {
-        wram.bonus_stage_time--;
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 4] = 0x80;
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 5] = 0x98;
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 6] = ones + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_BONUS_STAGE_TIME_START + 7] = 0;
+}
 
-        switch (wram.bonus_stage_time) {
-            case 0:
-                set_lose_state();
+void decrement_bonus_stage_time(void) {
+    // if (hram.game_tick > 0001 1111)
+    
+    uint8_t a = hram.game_tick;
+    a &= 0x1F;
 
-            case 20:
-                load_track_bonus_stage_fast();
+    if (a != 0) {
+        return;
+    }
 
-            default:
-                load_bonus_stage_time_oam_buffer();
-        }
+    bonus_stage_time--;
+    a = bonus_stage_time;
+
+    switch (bonus_stage_time) {
+        case 0:
+            set_lose_state();
+
+        case 20:
+            load_track_bonus_stage_fast();
+
+        default:
+            load_bonus_stage_time_oam_buffer(a, 0, 0);
     }
 }
 
-void load_bonus_stage_time_oam_buffer(void) {
-    uint8_t time = wram.bonus_stage_time;
-    binary_to_bcd(time);
-
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 0] = 0x80;
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 1] = 0x90;
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 2] = b + 0x80; // find out what b is
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 3] = 0;
-
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 4] = 0x80;
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 5] = 0x98;
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 6] = time + 0x80;
-    wram.oam_buffer[OAM_BONUS_STAGE_TIME_START + 7] = 0;
-}
-
-uint8_t update_bonus_stage_properties(uint8_t bonus_stage) {
-    bonus_stage = wram.bonus_stage_number - 1;
+void update_bonus_stage_properties(void) {
+    uint8_t bonus_stage = bonus_stage_number - 1;
     
     if (bonus_stage >= 3)
         bonus_stage = 3;
-
-    return bonus_stage;
 }
 
-void bonus_start_handler(void) {
+void bonus_start_handler(uint16_t hl) {
     update_bonus_stage_properties();
-
-    wram.bonus_stage_time = [hl];
+    
+    uint16_t *p_hl = &hl;
+    uint8_t a = *p_hl;
+    bonus_stage_time = a;
 
     load_bonus_time_text_vram();
-    load_bonus_stage_time_oam_buffer();
+    load_bonus_stage_time_oam_buffer(a, 0, 0);
     load_track_bonus_stage_start();
     wait_frames(32);
 }
@@ -83,7 +101,7 @@ void init_bonus_state(void) {
 
     // LAB_1a1a
     load_special_bonus_text_vram();
-    update_bonus_stage_properties(bonus_stage);
+    update_bonus_stage_properties();
 
     uint8_t max_time = bonus_stage_max_time[bonus_stage];
     uint16_t points_left = bonus_stage_points[bonus_stage];

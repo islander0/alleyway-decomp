@@ -1,11 +1,14 @@
 #include "../hram.c"
-#include "../wram.c"
+#include "../../include/wram.h"
 #include "../cpu.c"
+
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/game.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
-const uint8_t byte_array_100b [] = {
+const uint8_t byte_array_100b [16] = {
     0x06, 0x08, 0x0A, 0x06, 0x08, 0x0A, 0x08, 0x0A, 0x0A, 0x0C, 0x0E, 0x0A, 0x0C, 0x0E, 0x0A, 0x0C
 };
 
@@ -107,7 +110,7 @@ const uint16_t ball_angle_speed_table[114] = {
 
 void bonus_ball_set(void) {
     hram.ball_phase_through = 1;
-    wram.bonus_stage_number++;
+    bonus_stage_number++;
 }
 
 void align_ball_x_right(void) {
@@ -192,6 +195,17 @@ void reverse_ball_y_velocity(void) {
     hram.ball_y_velocity = -hram.ball_y_velocity;
     hram.ball_y_mirror = hram.ball_y;
 }
+
+void update_ball_oam_buffer(void) {
+    uint8_t offset = 0x0C;
+    uint16_t hl = oam_buffer[offset];
+
+    oam_buffer[offset++] = hram.ball_y;    // y
+    oam_buffer[offset++] = hram.ball_x;    // x
+    oam_buffer[offset++] = 5;              // tile ID
+    oam_buffer[offset++] = 0;              // attribute
+}
+
 void update_ball_position (void) {
     
     // TODO: change ball_y and ball_y_subpixel into a single 16-bit value
@@ -244,13 +258,13 @@ void ball_spawn_handler (void) {
         ? (hram.ball_velocity = 7)
         : (hram.ball_velocity = 3);
 
-    const static uint8_t play_area_middle = 72;
+    const static uint8_t PLAY_AREA_MIDDLE = 72;
     static int8_t ball_spawn_offset;
 
     static uint8_t paddle_center_x;
     paddle_center_x = hram.paddle_x + (hram.paddle_collision_width / 2);
 
-    paddle_center_x < play_area_middle
+    paddle_center_x < PLAY_AREA_MIDDLE
         ? (ball_spawn_offset = 24)
         : (ball_spawn_offset = -24);
 
@@ -284,12 +298,12 @@ void debug_ball_velocity(void) {
 
     // unused
 
-    oam_debug_ball_velocity[OAM_DEBUG_BALL_VELOCITY_START] = 0x98;
-    oam_debug_ball_velocity[OAM_DEBUG_BALL_VELOCITY_START + 1] = 0x10;
-    oam_debug_ball_velocity[OAM_DEBUG_BALL_VELOCITY_START + 2] = hram.ball_velocity + 0x80;
-    oam_debug_ball_velocity[OAM_DEBUG_BALL_VELOCITY_START + 3] = 0;
+    oam_buffer[OAM_DEBUG_BALL_VELOCITY_START] = 0x98;
+    oam_buffer[OAM_DEBUG_BALL_VELOCITY_START + 1] = 0x10;
+    oam_buffer[OAM_DEBUG_BALL_VELOCITY_START + 2] = hram.ball_velocity + 0x80;
+    oam_buffer[OAM_DEBUG_BALL_VELOCITY_START + 3] = 0;
 }
 
 void set_ball_oob (void) {
-    wram.ball_oob = true;
+    ball_oob = true;
 }

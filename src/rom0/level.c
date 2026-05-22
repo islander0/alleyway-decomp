@@ -1,8 +1,22 @@
-#include "../wram.c"
+#include "../../include/wram.h"
 #include "../hram.c"
-#include "../cpu.c"
-#include "../io.h"
-#include "../enum.h"
+#include "../../include/io.h"
+#include "../../include/enum.h"
+
+#include "../../include/rom0/anim.h"
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/bonus.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/game.h"
+#include "../../include/rom0/init.h"
+#include "../../include/rom0/lcd.h"
+#include "../../include/rom0/level.h"
+#include "../../include/rom0/paddle.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/score.h"
+#include "../../include/rom0/utils.h"
 
 #include <stdint.h>
 
@@ -28,8 +42,8 @@ void level_load_handler(void) {
     process_copy_table(tilemap_patch_table[0]);
 
     if (hram.game_state != LOAD_DEMO_STAGE
-        && wram.stage_number_display != 0
-        && wram.true_stage_number == 0) 
+        && stage_number_display != 0
+        && true_stage_number == 0) 
     {
         process_copy_table(0x42B3);
         set_palette_data(0);

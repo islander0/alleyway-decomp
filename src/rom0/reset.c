@@ -1,7 +1,5 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
-#include "../io.h"
+#include "../../include/io.h"
 
 #include <stdint.h>
 #include <stdbool.h>

@@ -1,5 +1,9 @@
-#include "../wram.c"
+#include "../../include/wram.h"
 #include "../hram.c"
+
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/render.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -10,7 +14,7 @@ static inline uint8_t swap_u8(uint8_t a) {
 }
 
 void increment_stage_number_display(void) {
-    wram.stage_number_display++;
+    stage_number_display++;
 }
 
 void add_brick_score_to_player_score(void) {
@@ -60,8 +64,8 @@ void set_next_extra_life_score_threshold(void) {
 
 void extra_life_score_handler(void) {
     if(hram.player_score % 1000 == 0) {
-        if (wram.life_counter < 9) {
-            wram.life_counter++;
+        if (life_counter < 9) {
+            life_counter++;
             set_event_extra_life();
         }
 

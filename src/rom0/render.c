@@ -1,7 +1,21 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
-#include "../vram.c"
+#include "../../include/wram.h"
+#include "../../include/vram.h"
+
+#include "../../include/rom0/anim.h"
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/bonus.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/game.h"
+#include "../../include/rom0/init.h"
+#include "../../include/rom0/lcd.h"
+#include "../../include/rom0/level.h"
+#include "../../include/rom0/paddle.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/score.h"
+#include "../../include/rom0/utils.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -113,21 +127,21 @@ void check_object_dirty_flag(void) {
 }
 
 // TODO rename a, b & c
-void copy_tiles4_oam_buffer(uint8_t a, uint8_t b, uint8_t c) {
-    uint16_t mario_spr = mario_start_spr_ptr_table[a];
+void copy_tiles4_oam_buffer(uint8_t x, uint8_t y, uint8_t mario_frame) {
+    uint16_t mario_spr = mario_start_spr_ptr_table[mario_frame];
     uint16_t *p_mario_spr = &mario_spr;
 
     for (uint8_t i = 0; i < 16;) {
-        wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr + c;   // y
+        oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr + y;   // y
         mario_spr++;
 
-        wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr + b;   // x
+        oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr + x;   // x
         mario_spr++;
 
-        wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr;
+        oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr;
         mario_spr++;
 
-        wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr;
+        oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + i++] = *p_mario_spr;
         mario_spr++;
     }
 }
@@ -136,10 +150,10 @@ void load_wall_oam_buffer(void) {
     uint8_t y_offset = 24;
 
     for (uint8_t i = 0; i < 68;){
-        wram.oam_buffer[OAM_WALL_START + i++] = y_offset;
-        wram.oam_buffer[OAM_WALL_START + i++] = 8;
-        wram.oam_buffer[OAM_WALL_START + i++] = 180;
-        wram.oam_buffer[OAM_WALL_START + i++] = 0;
+        oam_buffer[OAM_WALL_START + i++] = y_offset;
+        oam_buffer[OAM_WALL_START + i++] = 8;
+        oam_buffer[OAM_WALL_START + i++] = 180;
+        oam_buffer[OAM_WALL_START + i++] = 0;
 
         y_offset += 8;
     }
@@ -150,48 +164,48 @@ void load_game_over_text_oam_buffer(void) {
     // TODO: refactor with for loops
 
     // y plane
-    wram.oam_buffer[OAM_GAME_OVER_START + 0] = 80;
-    wram.oam_buffer[OAM_GAME_OVER_START + 4] = 80;
-    wram.oam_buffer[OAM_GAME_OVER_START + 8] = 80;
-    wram.oam_buffer[OAM_GAME_OVER_START + 12] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 0] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 4] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 8] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 12] = 80;
 
-    wram.oam_buffer[OAM_GAME_OVER_START + 16] = 80;
-    wram.oam_buffer[OAM_GAME_OVER_START + 20] = 80;
-    wram.oam_buffer[OAM_GAME_OVER_START + 24] = 80;
-    wram.oam_buffer[OAM_GAME_OVER_START + 28] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 16] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 20] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 24] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 28] = 80;
 
     // x plane
-    wram.oam_buffer[OAM_GAME_OVER_START + 1] = 56;
-    wram.oam_buffer[OAM_GAME_OVER_START + 5] = 64;
-    wram.oam_buffer[OAM_GAME_OVER_START + 9] = 72;
-    wram.oam_buffer[OAM_GAME_OVER_START + 13] = 80;
+    oam_buffer[OAM_GAME_OVER_START + 1] = 56;
+    oam_buffer[OAM_GAME_OVER_START + 5] = 64;
+    oam_buffer[OAM_GAME_OVER_START + 9] = 72;
+    oam_buffer[OAM_GAME_OVER_START + 13] = 80;
 
-    wram.oam_buffer[OAM_GAME_OVER_START + 17] = 96;
-    wram.oam_buffer[OAM_GAME_OVER_START + 21] = 104;
-    wram.oam_buffer[OAM_GAME_OVER_START + 25] = 112;
-    wram.oam_buffer[OAM_GAME_OVER_START + 29] = 120;
+    oam_buffer[OAM_GAME_OVER_START + 17] = 96;
+    oam_buffer[OAM_GAME_OVER_START + 21] = 104;
+    oam_buffer[OAM_GAME_OVER_START + 25] = 112;
+    oam_buffer[OAM_GAME_OVER_START + 29] = 120;
 
     // attribute
-    wram.oam_buffer[OAM_GAME_OVER_START + 3] = 0;
-    wram.oam_buffer[OAM_GAME_OVER_START + 7] = 0;
-    wram.oam_buffer[OAM_GAME_OVER_START + 11] = 0;
-    wram.oam_buffer[OAM_GAME_OVER_START + 15] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 3] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 7] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 11] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 15] = 0;
 
-    wram.oam_buffer[OAM_GAME_OVER_START + 19] = 0;
-    wram.oam_buffer[OAM_GAME_OVER_START + 23] = 0;
-    wram.oam_buffer[OAM_GAME_OVER_START + 27] = 0;
-    wram.oam_buffer[OAM_GAME_OVER_START + 31] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 19] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 23] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 27] = 0;
+    oam_buffer[OAM_GAME_OVER_START + 31] = 0;
 
     // tile ID
-    wram.oam_buffer[OAM_GAME_OVER_START + 2] = G;
-    wram.oam_buffer[OAM_GAME_OVER_START + 6] = A;
-    wram.oam_buffer[OAM_GAME_OVER_START + 10] = M;
-    wram.oam_buffer[OAM_GAME_OVER_START + 14] = E;
+    oam_buffer[OAM_GAME_OVER_START + 2] = G;
+    oam_buffer[OAM_GAME_OVER_START + 6] = A;
+    oam_buffer[OAM_GAME_OVER_START + 10] = M;
+    oam_buffer[OAM_GAME_OVER_START + 14] = E;
 
-    wram.oam_buffer[OAM_GAME_OVER_START + 18] = O;
-    wram.oam_buffer[OAM_GAME_OVER_START + 22] = V;
-    wram.oam_buffer[OAM_GAME_OVER_START + 26] = E;
-    wram.oam_buffer[OAM_GAME_OVER_START + 30] = R;
+    oam_buffer[OAM_GAME_OVER_START + 18] = O;
+    oam_buffer[OAM_GAME_OVER_START + 22] = V;
+    oam_buffer[OAM_GAME_OVER_START + 26] = E;
+    oam_buffer[OAM_GAME_OVER_START + 30] = R;
 }
 
 void load_special_bonus_points_oam_buffer(uint8_t b, uint8_t c) {
@@ -200,25 +214,25 @@ void load_special_bonus_points_oam_buffer(uint8_t b, uint8_t c) {
 
     score_to_bcd(hi, lo);
 
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 0] = 120;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 1] = 48;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 2] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 3] = 0;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 0] = 120;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 1] = 48;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 2] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 3] = 0;
 
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 4] = 120;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 5] = 56;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 6] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 7] = 0;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 4] = 120;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 5] = 56;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 6] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 7] = 0;
 
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 8] = 120;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 9] = 64;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 10] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 11] = 0;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 8] = 120;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 9] = 64;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 10] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 11] = 0;
 
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 12] = 120;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 13] = 72;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 14] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 15] = 0;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 12] = 120;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 13] = 72;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 14] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SPECIAL_BONUS_POINTS_START + 15] = 0;
 }
 
 void load_title_screen_top_score_buffer_oam(void) {
@@ -227,8 +241,8 @@ void load_title_screen_top_score_buffer_oam(void) {
 
     score_to_bcd(hi, lo);
 
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 0] = 112;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 1] = 112;
+    oam_buffer[OAM_TITLE_SCORE_START + 0] = 112;
+    oam_buffer[OAM_TITLE_SCORE_START + 1] = 112;
 
     uint8_t top_score_tile = CLEAR;
 
@@ -249,28 +263,28 @@ void load_title_screen_top_score_buffer_oam(void) {
     }
 
 load_top_score:
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 2] = top_score_tile;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 3] = 0;
+    oam_buffer[OAM_TITLE_SCORE_START + 2] = top_score_tile;
+    oam_buffer[OAM_TITLE_SCORE_START + 3] = 0;
 
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 4] = 104;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 5] = 112;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 6] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 7] = 0;
+    oam_buffer[OAM_TITLE_SCORE_START + 4] = 104;
+    oam_buffer[OAM_TITLE_SCORE_START + 5] = 112;
+    oam_buffer[OAM_TITLE_SCORE_START + 6] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_TITLE_SCORE_START + 7] = 0;
 
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 8] = 104;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 9] = 120;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 10] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 11] = 0;
+    oam_buffer[OAM_TITLE_SCORE_START + 8] = 104;
+    oam_buffer[OAM_TITLE_SCORE_START + 9] = 120;
+    oam_buffer[OAM_TITLE_SCORE_START + 10] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_TITLE_SCORE_START + 11] = 0;
 
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 12] = 104;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 13] = 128;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 14] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 15] = 0;
+    oam_buffer[OAM_TITLE_SCORE_START + 12] = 104;
+    oam_buffer[OAM_TITLE_SCORE_START + 13] = 128;
+    oam_buffer[OAM_TITLE_SCORE_START + 14] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_TITLE_SCORE_START + 15] = 0;
 
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 16] = 104;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 17] = 136;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 18] = hram.score_digit_ones + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_TITLE_SCORE_START + 19] = 0;
+    oam_buffer[OAM_TITLE_SCORE_START + 16] = 104;
+    oam_buffer[OAM_TITLE_SCORE_START + 17] = 136;
+    oam_buffer[OAM_TITLE_SCORE_START + 18] = hram.score_digit_ones + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_TITLE_SCORE_START + 19] = 0;
 }
 
 void update_score_oam_buffer(void) {    // implement score_to_bcd
@@ -279,8 +293,8 @@ void update_score_oam_buffer(void) {    // implement score_to_bcd
 
     score_to_bcd(hi, lo);
 
-    wram.oam_buffer[OAM_SCORE_START + 0] = 64;
-    wram.oam_buffer[OAM_SCORE_START + 1] = 64;
+    oam_buffer[OAM_SCORE_START + 0] = 64;
+    oam_buffer[OAM_SCORE_START + 1] = 64;
 
     uint8_t score_tile = CLEAR;
 
@@ -301,31 +315,31 @@ void update_score_oam_buffer(void) {    // implement score_to_bcd
     }
 
 update_current_score:
-    wram.oam_buffer[OAM_SCORE_START + 2] = score_tile;
-    wram.oam_buffer[OAM_SCORE_START + 3] = 0;
+    oam_buffer[OAM_SCORE_START + 2] = score_tile;
+    oam_buffer[OAM_SCORE_START + 3] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 4] = 56;
-    wram.oam_buffer[OAM_SCORE_START + 5] = 136;
-    wram.oam_buffer[OAM_SCORE_START + 6] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 7] = 0;
+    oam_buffer[OAM_SCORE_START + 4] = 56;
+    oam_buffer[OAM_SCORE_START + 5] = 136;
+    oam_buffer[OAM_SCORE_START + 6] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 7] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 8] = 56;
-    wram.oam_buffer[OAM_SCORE_START + 9] = 144;
-    wram.oam_buffer[OAM_SCORE_START + 10] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 11] = 0;
+    oam_buffer[OAM_SCORE_START + 8] = 56;
+    oam_buffer[OAM_SCORE_START + 9] = 144;
+    oam_buffer[OAM_SCORE_START + 10] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 11] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 12] = 56;
-    wram.oam_buffer[OAM_SCORE_START + 13] = 152;
-    wram.oam_buffer[OAM_SCORE_START + 14] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 15] = 0;
+    oam_buffer[OAM_SCORE_START + 12] = 56;
+    oam_buffer[OAM_SCORE_START + 13] = 152;
+    oam_buffer[OAM_SCORE_START + 14] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 15] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 16] = 56;
-    wram.oam_buffer[OAM_SCORE_START + 17] = 160;
-    wram.oam_buffer[OAM_SCORE_START + 18] = hram.score_digit_ones + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 19] = 0;
+    oam_buffer[OAM_SCORE_START + 16] = 56;
+    oam_buffer[OAM_SCORE_START + 17] = 160;
+    oam_buffer[OAM_SCORE_START + 18] = hram.score_digit_ones + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 19] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 20] = 40;
-    wram.oam_buffer[OAM_SCORE_START + 21] = 136;
+    oam_buffer[OAM_SCORE_START + 20] = 40;
+    oam_buffer[OAM_SCORE_START + 21] = 136;
     
     hi = hram.player_score_hi;
     lo = hram.player_score_lo;
@@ -351,31 +365,31 @@ update_current_score:
     }
 
 update_top_score:
-    wram.oam_buffer[OAM_SCORE_START + 22] = top_score_tile;
-    wram.oam_buffer[OAM_SCORE_START + 23] = 0;
+    oam_buffer[OAM_SCORE_START + 22] = top_score_tile;
+    oam_buffer[OAM_SCORE_START + 23] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 24] = 32;
-    wram.oam_buffer[OAM_SCORE_START + 25] = 136;
-    wram.oam_buffer[OAM_SCORE_START + 26] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 27] = 0;
+    oam_buffer[OAM_SCORE_START + 24] = 32;
+    oam_buffer[OAM_SCORE_START + 25] = 136;
+    oam_buffer[OAM_SCORE_START + 26] = hram.score_digit_thousands + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 27] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 28] = 32;
-    wram.oam_buffer[OAM_SCORE_START + 29] = 144;
-    wram.oam_buffer[OAM_SCORE_START + 30] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 31] = 0;
+    oam_buffer[OAM_SCORE_START + 28] = 32;
+    oam_buffer[OAM_SCORE_START + 29] = 144;
+    oam_buffer[OAM_SCORE_START + 30] = hram.score_digit_hundreds + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 31] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 32] = 32;
-    wram.oam_buffer[OAM_SCORE_START + 33] = 152;
-    wram.oam_buffer[OAM_SCORE_START + 34] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 35] = 0;
+    oam_buffer[OAM_SCORE_START + 32] = 32;
+    oam_buffer[OAM_SCORE_START + 33] = 152;
+    oam_buffer[OAM_SCORE_START + 34] = hram.score_digit_tens + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 35] = 0;
 
-    wram.oam_buffer[OAM_SCORE_START + 36] = 32;
-    wram.oam_buffer[OAM_SCORE_START + 37] = 160;
-    wram.oam_buffer[OAM_SCORE_START + 38] = hram.score_digit_ones + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_SCORE_START + 39] = 0;
+    oam_buffer[OAM_SCORE_START + 36] = 32;
+    oam_buffer[OAM_SCORE_START + 37] = 160;
+    oam_buffer[OAM_SCORE_START + 38] = hram.score_digit_ones + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_SCORE_START + 39] = 0;
 }
 void end_tile_load() {
-    wram.tile_buffer[7] = 0;
+    tile_buffer[7] = 0;
     
     hram.object_dirty_flag = true;
 
@@ -387,15 +401,15 @@ void clear_bonus_time_text_vram(void) {
     check_object_dirty_flag();
 
     // write 4 tiles at 0x9DA1
-    wram.tile_buffer[0] = 0x9D;
-    wram.tile_buffer[1] = 0xA1;
-    wram.tile_buffer[2] = 4;
+    tile_buffer[0] = 0x9D;
+    tile_buffer[1] = 0xA1;
+    tile_buffer[2] = 4;
 
     // stage number text
-    wram.tile_buffer[3] = CLEAR;
-    wram.tile_buffer[4] = CLEAR;
-    wram.tile_buffer[5] = CLEAR;
-    wram.tile_buffer[6] = CLEAR;
+    tile_buffer[3] = CLEAR;
+    tile_buffer[4] = CLEAR;
+    tile_buffer[5] = CLEAR;
+    tile_buffer[6] = CLEAR;
 
     end_tile_load();
 }
@@ -404,15 +418,15 @@ void load_bonus_time_text_vram(void) {
     check_object_dirty_flag();
 
     // write 4 tiles at 0x9DA1
-    wram.tile_buffer[0] = 0x9D;
-    wram.tile_buffer[1] = 0xA1;
-    wram.tile_buffer[2] = 4;
+    tile_buffer[0] = 0x9D;
+    tile_buffer[1] = 0xA1;
+    tile_buffer[2] = 4;
 
     // stage number text
-    wram.tile_buffer[3] = T;
-    wram.tile_buffer[4] = I;
-    wram.tile_buffer[5] = M;
-    wram.tile_buffer[6] = E;
+    tile_buffer[3] = T;
+    tile_buffer[4] = I;
+    tile_buffer[5] = M;
+    tile_buffer[6] = E;
 
     end_tile_load();
 }
@@ -422,13 +436,13 @@ void load_lives_number_vram(void) {
     check_object_dirty_flag();
 
     // write 1 tile at 0x9E04
-    wram.tile_buffer[0] = 0x9E;
-    wram.tile_buffer[1] = 0x04;
-    wram.tile_buffer[2] = 1;
+    tile_buffer[0] = 0x9E;
+    tile_buffer[1] = 0x04;
+    tile_buffer[2] = 1;
 
     // stage number text
-    wram.tile_buffer[3] = wram.life_counter + TILE_BLOCK_1_OFFSET;
-    wram.tile_buffer[4] = 0;
+    tile_buffer[3] = life_counter + TILE_BLOCK_1_OFFSET;
+    tile_buffer[4] = 0;
 
     hram.object_dirty_flag = true;
 
@@ -440,16 +454,16 @@ void load_stage_number_display_vram(uint8_t bcd_result, uint8_t bcd_hundreds, ui
     check_object_dirty_flag();
 
     // write 2 tiles at 0x9D62
-    wram.tile_buffer[0] = 0x9D;
-    wram.tile_buffer[1] = 0x62;
-    wram.tile_buffer[2] = 2;
+    tile_buffer[0] = 0x9D;
+    tile_buffer[1] = 0x62;
+    tile_buffer[2] = 2;
 
-    binary_to_bcd(wram.stage_number_display);
+    binary_to_bcd(stage_number_display);
 
     // stage number text
-    wram.tile_buffer[3] = bcd_tens + TILE_BLOCK_1_OFFSET;
-    wram.tile_buffer[4] = bcd_result + TILE_BLOCK_1_OFFSET;
-    wram.tile_buffer[5] = 0;
+    tile_buffer[3] = bcd_tens + TILE_BLOCK_1_OFFSET;
+    tile_buffer[4] = bcd_result + TILE_BLOCK_1_OFFSET;
+    tile_buffer[5] = 0;
 
     hram.object_dirty_flag = true;
 
@@ -460,90 +474,90 @@ void load_stage_number_display_vram(uint8_t bcd_result, uint8_t bcd_hundreds, ui
 void load_pause_text_oam_buffer(void) {
     // Y
     for (uint8_t i = 0; i < 20; i += 4)
-        wram.oam_buffer[OAM_PAUSE_START + i] = 112;
+        oam_buffer[OAM_PAUSE_START + i] = 112;
 
     // X
     for (uint8_t i = 1; i < 21; i += 4) {
         uint8_t x = 56;
-        wram.oam_buffer[OAM_PAUSE_START + i] = x;
+        oam_buffer[OAM_PAUSE_START + i] = x;
         x += 8;
     }
 
     // Attribute
     for (uint8_t i = 19; i < 31; i += 4)
-        wram.oam_buffer[OAM_PAUSE_START + i] = 0;
+        oam_buffer[OAM_PAUSE_START + i] = 0;
 
-    wram.oam_buffer[OAM_PAUSE_START + 19] = 0; //  bug: useless write, shouwram.oam_bufferbe + 35 and not + 19
+    oam_buffer[OAM_PAUSE_START + 19] = 0; //  bug: useless write, shouoam_bufferbe + 35 and not + 19
 
     // Tile ID
-    wram.oam_buffer[OAM_PAUSE_START + 2] = P;
-    wram.oam_buffer[OAM_PAUSE_START + 6] = A;
-    wram.oam_buffer[OAM_PAUSE_START + 10] = U;
-    wram.oam_buffer[OAM_PAUSE_START + 14] = S;
-    wram.oam_buffer[OAM_PAUSE_START + 18] = E;
+    oam_buffer[OAM_PAUSE_START + 2] = P;
+    oam_buffer[OAM_PAUSE_START + 6] = A;
+    oam_buffer[OAM_PAUSE_START + 10] = U;
+    oam_buffer[OAM_PAUSE_START + 14] = S;
+    oam_buffer[OAM_PAUSE_START + 18] = E;
 }
 
 void load_bonus_text_oam_buffer(void) {
     // Y
     for (uint8_t i = 0; i < 20; i += 4)
-        wram.oam_buffer[OAM_BONUS_TEXT_START + i] = 112;
+        oam_buffer[OAM_BONUS_TEXT_START + i] = 112;
 
     // X
     for (uint8_t i = 1; i < 21; i += 4) {
         uint8_t x = 56;
-        wram.oam_buffer[OAM_BONUS_TEXT_START + i] = x;
+        oam_buffer[OAM_BONUS_TEXT_START + i] = x;
         x += 8;
     }
 
     // Attribute
     for (uint8_t i = 19; i < 31; i += 4)
-        wram.oam_buffer[OAM_BONUS_TEXT_START + i] = 0;
+        oam_buffer[OAM_BONUS_TEXT_START + i] = 0;
 
-    wram.oam_buffer[OAM_BONUS_TEXT_START + 19] = 0; //  bug: useless write, shouwram.oam_bufferbe + 35 and not + 19
+    oam_buffer[OAM_BONUS_TEXT_START + 19] = 0; //  bug: useless write, shouoam_bufferbe + 35 and not + 19
 
     // Tile ID
-    wram.oam_buffer[OAM_BONUS_TEXT_START + 2] = B;
-    wram.oam_buffer[OAM_BONUS_TEXT_START + 6] = O;
-    wram.oam_buffer[OAM_BONUS_TEXT_START + 10] = N;
-    wram.oam_buffer[OAM_BONUS_TEXT_START + 14] = U;
-    wram.oam_buffer[OAM_BONUS_TEXT_START + 18] = S;
+    oam_buffer[OAM_BONUS_TEXT_START + 2] = B;
+    oam_buffer[OAM_BONUS_TEXT_START + 6] = O;
+    oam_buffer[OAM_BONUS_TEXT_START + 10] = N;
+    oam_buffer[OAM_BONUS_TEXT_START + 14] = U;
+    oam_buffer[OAM_BONUS_TEXT_START + 18] = S;
 }
 
 void load_stage_number_oam_buffer(uint8_t b, uint8_t bcd_result) {
     // Y
     for (uint8_t i = 0; i < 32; i += 4)
-        wram.oam_buffer[OAM_STAGE_NUMBER_START + i] = 112;
+        oam_buffer[OAM_STAGE_NUMBER_START + i] = 112;
 
     // X
     for (uint8_t i = 1; i < 33; i += 4) {
         uint8_t x = 48;
-        wram.oam_buffer[OAM_STAGE_NUMBER_START + i] = x;
+        oam_buffer[OAM_STAGE_NUMBER_START + i] = x;
         x += 8;
     }
 
     // Attribute
     for (uint8_t i = 3; i < 35; i += 4)
-        wram.oam_buffer[OAM_STAGE_NUMBER_START + i] = 0;
+        oam_buffer[OAM_STAGE_NUMBER_START + i] = 0;
 
     // Tile ID
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 2] = S;
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 6] = T;
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 10] = A;
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 14] = G;
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 18] = E;
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 22] = 0x3E;    // blank tile
+    oam_buffer[OAM_STAGE_NUMBER_START + 2] = S;
+    oam_buffer[OAM_STAGE_NUMBER_START + 6] = T;
+    oam_buffer[OAM_STAGE_NUMBER_START + 10] = A;
+    oam_buffer[OAM_STAGE_NUMBER_START + 14] = G;
+    oam_buffer[OAM_STAGE_NUMBER_START + 18] = E;
+    oam_buffer[OAM_STAGE_NUMBER_START + 22] = 0x3E;    // blank tile
 
-    binary_to_bcd(wram.stage_number_display);
+    binary_to_bcd(stage_number_display);
     
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 26] = b + TILE_BLOCK_1_OFFSET;
-    wram.oam_buffer[OAM_STAGE_NUMBER_START + 30] = bcd_result + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_STAGE_NUMBER_START + 26] = b + TILE_BLOCK_1_OFFSET;
+    oam_buffer[OAM_STAGE_NUMBER_START + 30] = bcd_result + TILE_BLOCK_1_OFFSET;
 }
 
 void clear_try_again_vram(void) {
     check_object_dirty_flag();
 
     for (uint8_t i = 0; i < 15; i++)
-        wram.tile_buffer[i] = clear_try_again_tile_vram_data[i];
+        tile_buffer[i] = clear_try_again_tile_vram_data[i];
     
     hram.object_dirty_flag = true;
 
@@ -554,7 +568,7 @@ void load_try_again_vram(void) {
     check_object_dirty_flag();
 
     for (uint8_t i = 0; i < 15; i++)
-        wram.tile_buffer[i] = try_again_tile_vram_data[i];
+        tile_buffer[i] = try_again_tile_vram_data[i];
     
     hram.object_dirty_flag = true;
 
@@ -565,7 +579,7 @@ void clear_special_bonus_text_vram(void) {
     check_object_dirty_flag();
 
     for (uint8_t i = 0; i < 23; i++)
-        wram.tile_buffer[i] = clear_special_bonus_text_tile_data[i];
+        tile_buffer[i] = clear_special_bonus_text_tile_data[i];
     
     hram.object_dirty_flag = true;
 
@@ -576,7 +590,7 @@ void load_special_bonus_text_vram(void) {
     check_object_dirty_flag();
 
     for (uint8_t i = 0; i < 23; i++)
-        wram.tile_buffer[i] = special_bonus_text_tile_data[i];
+        tile_buffer[i] = special_bonus_text_tile_data[i];
     
     hram.object_dirty_flag = true;
 
@@ -593,7 +607,7 @@ void load_tile_data(void) {
 
 void clear_oam_buffer(uint8_t loop_counter, uint8_t offset) {
     for (uint8_t i = 0; i < 160; i++)
-        wram.oam_buffer[i + offset] = 0;
+        oam_buffer[i + offset] = 0;
 }
 
 void load_main_oam_buffer(void) {
@@ -724,16 +738,16 @@ uint8_t process_copy_table(uint16_t de) {
 
 void oam_buffer_update(void) {
     if (hram.object_dirty_flag != 0) {
-        // uint8_t tile = wram.tile_buffer[0];
+        // uint8_t tile = tile_buffer[0];
         // uint8_t *ptile = &tile;
 
-        uint8_t de = wram.tile_buffer[0];
+        uint8_t de = tile_buffer[0];
         uint8_t *p_de = &de;
 
         process_copy_table(de);
 
-        wram.bg_map_buffer_pad = 0;
-        wram.tile_buffer[0] = 0;
+        bg_map_buffer_pad = 0;
+        tile_buffer[0] = 0;
         hram.object_dirty_flag = false;
     }
 }

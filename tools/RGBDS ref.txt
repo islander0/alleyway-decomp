@@ -1,0 +1,8 @@
+1. Build the object file from root
+rgbasm -i asm -o build/alleyway.o asm/main.asm
+
+2. Link the ROM
+rgblink -o build/alleyway.gb build/alleyway.o -t -d
+
+3. fix the Checksum
+rgbfix -v build/alleyway.gb

@@ -30,8 +30,8 @@ DEF POINT_COUNTDOWN_SFX_ENV_2_DATA_START    EQU $7038
 
 DEF EXPLOSION_SFX_DATA_START    EQU $704C
 
-DEF NOTE_FREQ_LO_TABLE  EQU $7531
-DEF NOTE_FREQ_HI_TABLE  EQU $7574
+DEF NOTE_FREQ_PTR_TABLE_HI_START  EQU $7531
+DEF NOTE_FREQ_PTR_TABLE_LO_START  EQU $7574
 
 DEF NOTE_LENGTH_TABLE_START EQU $75B7
 
@@ -1920,14 +1920,14 @@ ch2_pattern_read_loop:
 
     push hl
 
-    ld hl, NOTE_FREQ_HI_TABLE
+    ld hl, NOTE_FREQ_PTR_TABLE_LO_START
     ld d, $0
     ld e, a ; a = w_ch2_pitch_mirror
     add hl, de
     ld a, [hl]
     ldh [rNR23], a
 
-    ld hl, NOTE_FREQ_LO_TABLE
+    ld hl, NOTE_FREQ_PTR_TABLE_HI_START
     add hl, de
     ld a, [hl]
     ldh [rNR24], a
@@ -1954,7 +1954,7 @@ ch3_note_length_decrement:
     ld [w_ch3_note_length], a 
 
     cp $0
-    jp nz, LAB_745e
+    jp nz, return_745e
 
     ld a, [w_ch3_pattern_ptr_hi]  
     ld h, a
@@ -1999,14 +1999,14 @@ ch3_play_note:
     ldh [rNR32], a
 
     ld a, [w_ch3_pitch_mirror]
-    ld hl, NOTE_FREQ_HI_TABLE
+    ld hl, NOTE_FREQ_PTR_TABLE_LO_START
     ld d, $0
     ld e, a
     add hl, de
     ld a, [hl]
     ldh [rNR33], a
 
-    ld hl, NOTE_FREQ_LO_TABLE
+    ld hl, NOTE_FREQ_PTR_TABLE_HI_START
     add hl, de
     ld a, [hl]
     ldh [rNR34], a
@@ -2021,12 +2021,12 @@ ch3_save_ptr:
 
     ld a, [w_ch3_note_length] 
     and a   ; affects Z flag
-    jr nz, LAB_745e
+    jr nz, return_745e
     
     ld a, [w_ch3_note_length_max] 
     ld [w_ch3_note_length], a 
 
-LAB_745e:
+return_745e:
     ret
 
 ; loads ch3_waveform_data in intervals of $10
@@ -2198,9 +2198,11 @@ debug_set_sfx_clear_flag:
     ld [w_debug_sfx_clear_flag], a
     ret
 
-note_freq_table:    ; 16-bit address, little endian
-    db $00,$C0,$80,$80,$81,$81,$81,$82,$82,$82,$83,$83,$83,$83,$84,$84,$84,$84,$84,$85,$85,$85,$85,$85,$85,$85,$86,$86,$86,$86,$86,$86,$86,$86,$86,$86,$86,$86,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87  ; lower nibble
-    db $00,$00,$2C,$9D,$07,$6B,$C9,$23,$77,$C7,$12,$58,$9B,$DA,$16,$4F,$83,$B5,$E5,$11,$3B,$63,$88,$AC,$CE,$ED,$0B,$27,$42,$5B,$72,$89,$9E,$B2,$C4,$D6,$E7,$F7,$06,$14,$21,$2D,$39,$44,$4F,$59,$62,$6B,$73,$7B,$83,$8A,$90,$97,$9D,$A2,$A7,$AC,$B1,$B6,$BA,$BE,$C1,$C5,$C8,$CB,$CE  ; higher nibble
+note_freq_ptr_table_hi:
+    db $00,$C0,$80,$80,$81,$81,$81,$82,$82,$82,$83,$83,$83,$83,$84,$84,$84,$84,$84,$85,$85,$85,$85,$85,$85,$85,$86,$86,$86,$86,$86,$86,$86,$86,$86,$86,$86,$86,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87,$87
+    
+note_freq_ptr_table_lo:
+    db $00,$00,$2C,$9D,$07,$6B,$C9,$23,$77,$C7,$12,$58,$9B,$DA,$16,$4F,$83,$B5,$E5,$11,$3B,$63,$88,$AC,$CE,$ED,$0B,$27,$42,$5B,$72,$89,$9E,$B2,$C4,$D6,$E7,$F7,$06,$14,$21,$2D,$39,$44,$4F,$59,$62,$6B,$73,$7B,$83,$8A,$90,$97,$9D,$A2,$A7,$AC,$B1,$B6,$BA,$BE,$C1,$C5,$C8,$CB,$CE
 
 note_length_table:
     db $04,$08,$10,$20,$40,$0C,$18,$30,$05,$06,$0B,$0A,$05,$0A,$14,$28,$50,$0F,$1E,$3C,$07,$06,$02,$01,$03,$06,$0C,$18,$30,$09,$12,$24,$04,$04,$0B,$0A,$06,$0C,$18,$30,$60,$12,$24,$48

@@ -1,0 +1,18 @@
+FUNC ?= MyFunction
+SRC  ?= src/$(FUNC).c
+ASM_SRC = alleyway.asm   # your full disassembly
+
+.PHONY: diff
+
+diff: build/$(FUNC)_base_norm.asm build/$(FUNC)_target_norm.asm
+	diff -y --width=120 $^ || true
+
+build/$(FUNC)_base_norm.asm: $(SRC)
+	mkdir -p build
+	sdcc -msm83 --no-std-crt0 -S $(SRC) -o build/$(FUNC)_raw.asm
+	python tools/normalize_sdcc_asm.py build/$(FUNC)_raw.asm > $@
+
+build/$(FUNC)_target_norm.asm: $(ASM_SRC)
+	mkdir -p build
+	python tools/extract_func.py $(ASM_SRC) $(FUNC) | \
+	  python tools/normalize_sdcc_asm.py /dev/stdin > $@

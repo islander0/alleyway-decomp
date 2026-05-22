@@ -1,6 +1,20 @@
 #include "../hram.c"
-#include "../wram.c"
-#include "../cpu.c"
+#include "../../include/wram.h"
+
+#include "../../include/rom0/anim.h"
+#include "../../include/rom0/audio.h"
+#include "../../include/rom0/ball.h"
+#include "../../include/rom0/bonus.h"
+#include "../../include/rom0/brick.h"
+#include "../../include/rom0/game.h"
+#include "../../include/rom0/init.h"
+#include "../../include/rom0/lcd.h"
+#include "../../include/rom0/level.h"
+#include "../../include/rom0/paddle.h"
+#include "../../include/rom0/render.h"
+#include "../../include/rom0/reset.h"
+#include "../../include/rom0/score.h"
+#include "../../include/rom0/utils.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -123,35 +137,35 @@ update_paddle_x:
 
 void update_paddle_oam_buffer(void) {
     if (hram.paddle_size == SMALL_PADDLE) {
-        wram.oam_buffer[OAM_PADDLE_START + 0] = hram.init_paddle_y;
-        wram.oam_buffer[OAM_PADDLE_START + 1] = hram.paddle_x + 1;
-        wram.oam_buffer[OAM_PADDLE_START + 2] = 0;
-        wram.oam_buffer[OAM_PADDLE_START + 3] = 0;
+        oam_buffer[OAM_PADDLE_START + 0] = hram.init_paddle_y;
+        oam_buffer[OAM_PADDLE_START + 1] = hram.paddle_x + 1;
+        oam_buffer[OAM_PADDLE_START + 2] = 0;
+        oam_buffer[OAM_PADDLE_START + 3] = 0;
 
-        wram.oam_buffer[OAM_PADDLE_START + 4] = hram.init_paddle_y;
-        wram.oam_buffer[OAM_PADDLE_START + 5] = hram.paddle_x + 9;
-        wram.oam_buffer[OAM_PADDLE_START + 6] = 0;
-        wram.oam_buffer[OAM_PADDLE_START + 7] = 0x20;
+        oam_buffer[OAM_PADDLE_START + 4] = hram.init_paddle_y;
+        oam_buffer[OAM_PADDLE_START + 5] = hram.paddle_x + 9;
+        oam_buffer[OAM_PADDLE_START + 6] = 0;
+        oam_buffer[OAM_PADDLE_START + 7] = 0x20;
 
-        wram.oam_buffer[OAM_PADDLE_START + 8] = hram.init_paddle_y;
-        wram.oam_buffer[OAM_PADDLE_START + 9] = hram.paddle_x + 5;
-        wram.oam_buffer[OAM_PADDLE_START + 10] = 1;
-        wram.oam_buffer[OAM_PADDLE_START + 11] = 0;
+        oam_buffer[OAM_PADDLE_START + 8] = hram.init_paddle_y;
+        oam_buffer[OAM_PADDLE_START + 9] = hram.paddle_x + 5;
+        oam_buffer[OAM_PADDLE_START + 10] = 1;
+        oam_buffer[OAM_PADDLE_START + 11] = 0;
     } else {    // NORMAL_PADDLE
-        wram.oam_buffer[OAM_PADDLE_START + 0] = hram.init_paddle_y;
-        wram.oam_buffer[OAM_PADDLE_START + 1] = hram.paddle_x + 1;
-        wram.oam_buffer[OAM_PADDLE_START + 2] = 0;
-        wram.oam_buffer[OAM_PADDLE_START + 3] = 0;
+        oam_buffer[OAM_PADDLE_START + 0] = hram.init_paddle_y;
+        oam_buffer[OAM_PADDLE_START + 1] = hram.paddle_x + 1;
+        oam_buffer[OAM_PADDLE_START + 2] = 0;
+        oam_buffer[OAM_PADDLE_START + 3] = 0;
 
-        wram.oam_buffer[OAM_PADDLE_START + 4] = hram.init_paddle_y;
-        wram.oam_buffer[OAM_PADDLE_START + 5] = hram.paddle_x + 9;
-        wram.oam_buffer[OAM_PADDLE_START + 6] = 1;
-        wram.oam_buffer[OAM_PADDLE_START + 7] = 0;
+        oam_buffer[OAM_PADDLE_START + 4] = hram.init_paddle_y;
+        oam_buffer[OAM_PADDLE_START + 5] = hram.paddle_x + 9;
+        oam_buffer[OAM_PADDLE_START + 6] = 1;
+        oam_buffer[OAM_PADDLE_START + 7] = 0;
 
-        wram.oam_buffer[OAM_PADDLE_START + 8] = hram.init_paddle_y;
-        wram.oam_buffer[OAM_PADDLE_START + 9] = hram.paddle_x + 17;
-        wram.oam_buffer[OAM_PADDLE_START + 10] = 0;
-        wram.oam_buffer[OAM_PADDLE_START + 11] = 0x20;
+        oam_buffer[OAM_PADDLE_START + 8] = hram.init_paddle_y;
+        oam_buffer[OAM_PADDLE_START + 9] = hram.paddle_x + 17;
+        oam_buffer[OAM_PADDLE_START + 10] = 0;
+        oam_buffer[OAM_PADDLE_START + 11] = 0x20;
     }
 }
 
